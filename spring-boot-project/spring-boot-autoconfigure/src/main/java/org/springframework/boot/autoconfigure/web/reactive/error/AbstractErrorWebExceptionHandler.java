@@ -234,33 +234,44 @@ public abstract class AbstractErrorWebExceptionHandler implements ErrorWebExcept
 	 * @param error the error data as a map
 	 * @return a Publisher of the {@link ServerResponse}
 	 */
-	protected Mono<ServerResponse> renderDefaultErrorView(ServerResponse.BodyBuilder responseBody,
-			Map<String, Object> error) {
+	protected Mono<ServerResponse> renderDefaultErrorView(ServerResponse.BodyBuilder responseBody, Map<String, Object> error) {
 		StringBuilder builder = new StringBuilder();
+		buildHtmlHeader(builder);
+		buildErrorDetails(builder, error);
+		buildHtmlFooter(builder);
+		return responseBody.bodyValue(builder.toString());
+	}
+
+	private void buildHtmlHeader(StringBuilder builder) {
+		builder.append("<html><body><h1>Whitelabel Error Page</h1>")
+				.append("<p>This application has no configured error view, so you are seeing this as a fallback.</p>")
+				.append("<div id='created'>");
+	}
+
+	private void buildErrorDetails(StringBuilder builder, Map<String, Object> error) {
 		Date timestamp = (Date) error.get("timestamp");
 		Object message = error.get("message");
 		Object trace = error.get("trace");
 		Object requestId = error.get("requestId");
-		builder.append("<html><body><h1>Whitelabel Error Page</h1>")
-			.append("<p>This application has no configured error view, so you are seeing this as a fallback.</p>")
-			.append("<div id='created'>")
-			.append(timestamp)
-			.append("</div>")
-			.append("<div>[")
-			.append(requestId)
-			.append("] There was an unexpected error (type=")
-			.append(htmlEscape(error.get("error")))
-			.append(", status=")
-			.append(htmlEscape(error.get("status")))
-			.append(").</div>");
+		builder.append(timestamp)
+				.append("</div>")
+				.append("<div>[")
+				.append(requestId)
+				.append("] There was an unexpected error (type=")
+				.append(htmlEscape(error.get("error")))
+				.append(", status=")
+				.append(htmlEscape(error.get("status")))
+				.append(").</div>");
 		if (message != null) {
 			builder.append("<div>").append(htmlEscape(message)).append("</div>");
 		}
 		if (trace != null) {
 			builder.append("<div style='white-space:pre-wrap;'>").append(htmlEscape(trace)).append("</div>");
 		}
+	}
+
+	private void buildHtmlFooter(StringBuilder builder) {
 		builder.append("</body></html>");
-		return responseBody.bodyValue(builder.toString());
 	}
 
 	private String htmlEscape(Object input) {
