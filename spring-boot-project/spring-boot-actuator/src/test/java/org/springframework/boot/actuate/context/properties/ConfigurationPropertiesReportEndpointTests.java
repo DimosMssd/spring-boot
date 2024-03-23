@@ -73,29 +73,32 @@ class ConfigurationPropertiesReportEndpointTests {
 
 	@Test
 	void descriptorWithJavaBeanBindMethodDetectsRelevantProperties() {
-		this.contextRunner.withUserConfiguration(TestPropertiesConfiguration.class)
-			.run(assertProperties("test", (properties) -> assertThat(properties).containsOnlyKeys("dbPassword",
-					"myTestProperty", "duration")));
+		runTestWithConfiguration(TestPropertiesConfiguration.class, "test",
+				"dbPassword", "myTestProperty", "duration");
 	}
 
 	@Test
 	void descriptorWithAutowiredConstructorBindMethodDetectsRelevantProperties() {
-		this.contextRunner.withUserConfiguration(AutowiredPropertiesConfiguration.class)
-			.run(assertProperties("autowired", (properties) -> assertThat(properties).containsOnlyKeys("counter")));
+		runTestWithConfiguration(AutowiredPropertiesConfiguration.class, "autowired",
+				"counter");
 	}
 
 	@Test
 	void descriptorWithValueObjectBindMethodDetectsRelevantProperties() {
-		this.contextRunner.withUserConfiguration(ImmutablePropertiesConfiguration.class)
-			.run(assertProperties("immutable",
-					(properties) -> assertThat(properties).containsOnlyKeys("dbPassword", "myTestProperty", "for")));
+		runTestWithConfiguration(ImmutablePropertiesConfiguration.class, "immutable",
+				"dbPassword", "myTestProperty", "for");
 	}
 
 	@Test
 	void descriptorWithValueObjectBindMethodUseDedicatedConstructor() {
-		this.contextRunner.withUserConfiguration(MultiConstructorPropertiesConfiguration.class)
-			.run(assertProperties("multiconstructor",
-					(properties) -> assertThat(properties).containsOnly(entry("name", "test"))));
+		runTestWithConfiguration(MultiConstructorPropertiesConfiguration.class, "multiconstructor",
+				"name", "test");
+	}
+
+	private void runTestWithConfiguration(Class<?> configurationClass, String configurationName,
+			String... expectedKeys) {
+		this.contextRunner.withUserConfiguration(configurationClass)
+				.run(assertProperties(configurationName, properties -> assertThat(properties).containsOnlyKeys(expectedKeys)));
 	}
 
 	@Test
