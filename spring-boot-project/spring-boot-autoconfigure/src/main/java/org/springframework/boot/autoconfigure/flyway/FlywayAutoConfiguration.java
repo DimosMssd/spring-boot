@@ -51,9 +51,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayAutoConfigurationRuntimeHints;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayDataSourceCondition;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties.Oracle;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties.Postgresql;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties.Sqlserver;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
@@ -534,7 +531,7 @@ public class FlywayAutoConfiguration {
 		}
 
 		@Override
-		public void customize(FluentConfiguration configuration) {
+			public void customize(FluentConfiguration configuration) {
 			Extension<PostgreSQLConfigurationExtension> extension = new Extension<>(configuration,
 					PostgreSQLConfigurationExtension.class, "PostgreSQL");
 			Postgresql properties = this.properties.getPostgresql();
