@@ -124,9 +124,9 @@ public class FlywayAutoConfiguration {
 	@EnableConfigurationProperties(FlywayProperties.class)
 	public static class FlywayConfiguration {
 
-		private final FlywayProperties properties;
+		private final FlywayConfigureProperties properties;
 
-		FlywayConfiguration(FlywayProperties properties) {
+		FlywayConfiguration(FlywayConfigureProperties properties) {
 			this.properties = properties;
 		}
 
@@ -222,7 +222,7 @@ public class FlywayAutoConfiguration {
 		 * @param configuration the configuration
 		 * @param properties the properties
 		 */
-		private void configureProperties(FluentConfiguration configuration, FlywayProperties properties) {
+		private void configureProperties(FluentConfiguration configuration, FlywayConfigureProperties properties) {
 			PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 			String[] locations = new LocationResolver(configuration.getDataSource())
 				.resolveLocations(properties.getLocations())
@@ -467,10 +467,10 @@ public class FlywayAutoConfiguration {
 	 */
 	static final class PropertiesFlywayConnectionDetails implements FlywayConnectionDetails {
 
-		private final FlywayProperties properties;
+		private final FlywayPropertiesConfigurationExecutionInTransaction properties;
 
 		PropertiesFlywayConnectionDetails(FlywayProperties properties) {
-			this.properties = properties;
+			this.properties = (FlywayPropertiesConfigurationExecutionInTransaction) properties;
 		}
 
 		@Override
