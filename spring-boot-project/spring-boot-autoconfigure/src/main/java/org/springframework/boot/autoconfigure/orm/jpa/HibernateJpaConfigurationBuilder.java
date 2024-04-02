@@ -78,9 +78,28 @@ public class HibernateJpaConfigurationBuilder {
 		this.jtaTransactionManager = jtaTransactionManager;
 	}
 
-	public HibernateJpaConfigurationBuilder withHibernateProperties(HibernateProperties hibernateProperties) {
+	public HibernateJpaConfigurationBuilder withHibernatePropertiesAndCustomizers(HibernateProperties hibernateProperties, ObjectProvider<HibernatePropertiesCustomizer> hibernatePropertiesCustomizers) {
 		this.hibernateProperties = hibernateProperties;
+		this.hibernatePropertiesCustomizers = hibernatePropertiesCustomizers;
 		return this;
+	}
+
+	public HibernateJpaConfigurationBuilder withMetadataAndSchemaManagementProviders(ObjectProvider<Collection<DataSourcePoolMetadataProvider>> metadataProviders, ObjectProvider<SchemaManagementProvider> providers) {
+		this.metadataProviders = metadataProviders;
+		this.providers = providers;
+		return this;
+	}
+
+	public HibernateJpaConfigurationBuilder withNamingStrategies(ObjectProvider<PhysicalNamingStrategy> physicalNamingStrategy, ObjectProvider<ImplicitNamingStrategy> implicitNamingStrategy) {
+		this.physicalNamingStrategy = physicalNamingStrategy;
+		this.implicitNamingStrategy = implicitNamingStrategy;
+		return this;
+	}
+
+	public HibernateJpaConfiguration build() {
+		return new HibernateJpaConfiguration(this.dataSource, this.jpaProperties, this.beanFactory, this.jtaTransactionManager,
+				this.hibernateProperties, this.metadataProviders, this.providers, this.physicalNamingStrategy,
+				this.implicitNamingStrategy, this.hibernatePropertiesCustomizers);
 	}
 
 }
