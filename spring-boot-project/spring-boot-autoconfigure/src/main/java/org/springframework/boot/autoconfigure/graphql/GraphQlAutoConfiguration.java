@@ -98,6 +98,7 @@ public class GraphQlAutoConfiguration {
 			ObjectProvider<Instrumentation> instrumentations, ObjectProvider<RuntimeWiringConfigurer> wiringConfigurers,
 			ObjectProvider<GraphQlSourceBuilderCustomizer> sourceCustomizers,
 			ObjectProvider<TypeDefinitionConfigurer> typeDefinitionConfigurers) {
+
 		String[] schemaLocations = properties.getSchema().getLocations();
 		Resource[] schemaResources = resolveSchemaResources(resourcePatternResolver, schemaLocations,
 				properties.getSchema().getFileExtensions());
@@ -117,6 +118,40 @@ public class GraphQlAutoConfiguration {
 		wiringConfigurers.orderedStream().forEach(builder::configureRuntimeWiring);
 		sourceCustomizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder.build();
+	}
+
+	public void graphQlSourceFirst(GraphQlProperties properties,ResourcePatternResolver resourcePatternResolver){
+		String[] schemaLocations = properties.getSchema().getLocations();
+		Resource[] schemaResources = resolveSchemaResources(resourcePatternResolver, schemaLocations,
+				properties.getSchema().getFileExtensions());
+		GraphQlSource.SchemaResourceBuilder builder = GraphQlSource.schemaResourceBuilder()
+				.schemaResources(schemaResources);
+
+	}
+
+	public void graphQlSourceSecond(GraphQlSource.SchemaResourceBuilder builder,ObjectProvider<DataFetcherExceptionResolver> exceptionResolvers,
+				ObjectProvider<SubscriptionExceptionResolver> subscriptionExceptionResolvers,ObjectProvider<Instrumentation> instrumentations){
+		GraphQlSource.SchemaResourceBuilder newBuilder=builder
+				.exceptionResolvers(exceptionResolvers.orderedStream().toList())
+				.subscriptionExceptionResolvers(subscriptionExceptionResolvers.orderedStream().toList())
+				.instrumentation(instrumentations.orderedStream().toList());
+	}
+
+	public GraphQlSource graphQlSourceThird(GraphQlProperties properties,GraphQlSource.SchemaResourceBuilder newBuilder,
+			ObjectProvider<Instrumentation> instrumentations, ObjectProvider<RuntimeWiringConfigurer> wiringConfigurers,
+			ObjectProvider<GraphQlSourceBuilderCustomizer> sourceCustomizers,
+			ObjectProvider<TypeDefinitionConfigurer> typeDefinitionConfigurers){
+		if (properties.getSchema().getInspection().isEnabled()) {
+			newBuilder.inspectSchemaMappings(logger::info);
+		}
+		if (!properties.getSchema().getIntrospection().isEnabled()) {
+			newBuilder.configureRuntimeWiring(this::enableIntrospection);
+		}
+		typeDefinitionConfigurers.forEach(newBuilder::configureTypeDefinitions);
+		newBuilder.configureTypeDefinitions(new ConnectionTypeDefinitionConfigurer());
+		wiringConfigurers.orderedStream().forEach(newBuilder::configureRuntimeWiring);
+		sourceCustomizers.orderedStream().forEach((customizer) -> customizer.customize(newBuilder));
+		return newBuilder.build();
 	}
 
 	private Builder enableIntrospection(Builder wiring) {

@@ -434,7 +434,7 @@ public class ServerProperties {
 		 * with a subsequent request. When set to -1 the cache will be unlimited with a
 		 * theoretical maximum size equal to the maximum number of connections.
 		 */
-		private int processorCache = 200;
+		private static int MAXIMUM_PROCESSOR_CACHE = 200;
 
 		/**
 		 * Time to wait for another HTTP request before the connection is closed. When not
@@ -581,11 +581,11 @@ public class ServerProperties {
 		}
 
 		public int getProcessorCache() {
-			return this.processorCache;
+			return Tomcat.MAXIMUM_PROCESSOR_CACHE;
 		}
 
 		public void setProcessorCache(int processorCache) {
-			this.processorCache = processorCache;
+			this.MAXIMUM_PROCESSOR_CACHE = processorCache;
 		}
 
 		public Duration getKeepAliveTimeout() {

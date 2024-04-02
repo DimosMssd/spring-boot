@@ -51,9 +51,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayAutoConfigurationRuntimeHints;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayDataSourceCondition;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties.Oracle;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties.Postgresql;
-import org.springframework.boot.autoconfigure.flyway.FlywayProperties.Sqlserver;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
@@ -127,9 +124,9 @@ public class FlywayAutoConfiguration {
 	@EnableConfigurationProperties(FlywayProperties.class)
 	public static class FlywayConfiguration {
 
-		private final FlywayProperties properties;
+		private final FlywayConfigureProperties properties;
 
-		FlywayConfiguration(FlywayProperties properties) {
+		FlywayConfiguration(FlywayConfigureProperties properties) {
 			this.properties = properties;
 		}
 
@@ -225,7 +222,7 @@ public class FlywayAutoConfiguration {
 		 * @param configuration the configuration
 		 * @param properties the properties
 		 */
-		private void configureProperties(FluentConfiguration configuration, FlywayProperties properties) {
+		private void configureProperties(FluentConfiguration configuration, FlywayConfigureProperties properties) {
 			PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 			String[] locations = new LocationResolver(configuration.getDataSource())
 				.resolveLocations(properties.getLocations())
@@ -470,10 +467,10 @@ public class FlywayAutoConfiguration {
 	 */
 	static final class PropertiesFlywayConnectionDetails implements FlywayConnectionDetails {
 
-		private final FlywayProperties properties;
+		private final FlywayPropertiesConfigurationExecutionInTransaction properties;
 
 		PropertiesFlywayConnectionDetails(FlywayProperties properties) {
-			this.properties = properties;
+			this.properties = (FlywayPropertiesConfigurationExecutionInTransaction) properties;
 		}
 
 		@Override
@@ -534,7 +531,7 @@ public class FlywayAutoConfiguration {
 		}
 
 		@Override
-		public void customize(FluentConfiguration configuration) {
+			public void customize(FluentConfiguration configuration) {
 			Extension<PostgreSQLConfigurationExtension> extension = new Extension<>(configuration,
 					PostgreSQLConfigurationExtension.class, "PostgreSQL");
 			Postgresql properties = this.properties.getPostgresql();
