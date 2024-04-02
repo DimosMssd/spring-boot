@@ -16,6 +16,9 @@
 
 package org.springframework.boot.autoconfigure.flyway;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "spring.flyway")
 public class FlywayPropertiesConfigurationExecutionInTransaction extends FlywayProperties {
 
 	/**

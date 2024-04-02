@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FlywayConfigurePropertiesTests extends FlywayPropertiesTests {
+public class FlywayConfigurePropertiesTests {
 	@Test
 	void defaultValuesAreConsistent() {
 		FlywayProperties properties = new FlywayConfigureProperties();
