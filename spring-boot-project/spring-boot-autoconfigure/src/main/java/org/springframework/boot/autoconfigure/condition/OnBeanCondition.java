@@ -587,9 +587,18 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 		}
 
 		private boolean isBeanMethod(Method method) {
-			return method != null && MergedAnnotations.from(method, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY)
-				.isPresent(Bean.class);
+			return method != null && matchedBeanIsPresent(method);
 		}
+
+		public MergedAnnotations mergedAnnotationsFrom(Method method){
+			return MergedAnnotations.from(method, MergedAnnotations.SearchStrategy.TYPE_HIERARCHY);
+
+		}
+
+		public boolean matchedBeanIsPresent(Method method){
+			return mergedAnnotationsFrom(method).isPresent(Bean.class);
+		}
+
 
 		private SearchStrategy getStrategy() {
 			return (this.strategy != null) ? this.strategy : SearchStrategy.ALL;
