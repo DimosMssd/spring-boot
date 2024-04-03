@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.context.properties.bind.Binder;
@@ -262,51 +263,51 @@ class ProfilesTests {
 
 	@Test
 	void iteratorIteratesAllDefaultProfilesWhenNoActive() {
-		MockEnvironment environment = new MockEnvironment();
-		environment.setDefaultProfiles("d", "e", "f");
-		Binder binder = Binder.get(environment);
-		Profiles profiles1 = new Profiles(environment, binder, null);
-		Profiles profiles = profiles1;
+		Profiles profiles = getProfiles2();
 		assertThat(profiles).containsExactly("d", "e", "f");
 	}
 
 	@Test
 	void isActiveWhenActiveContainsProfileReturnsTrue() {
+		Profiles profiles = getProfiles1();
+		assertThat(profiles.isAccepted("a")).isTrue();
+	}
+
+	@NotNull
+	private static Profiles getProfiles1() {
 		MockEnvironment environment = new MockEnvironment();
 		environment.setActiveProfiles("a", "b", "c");
 		Binder binder = Binder.get(environment);
 		Profiles profiles1 = new Profiles(environment, binder, null);
 		Profiles profiles = profiles1;
-		assertThat(profiles.isAccepted("a")).isTrue();
+		return profiles;
 	}
 
 	@Test
 	void isActiveWhenActiveDoesNotContainProfileReturnsFalse() {
-		MockEnvironment environment = new MockEnvironment();
-		environment.setActiveProfiles("a", "b", "c");
-		Binder binder = Binder.get(environment);
-		Profiles profiles1 = new Profiles(environment, binder, null);
-		Profiles profiles = profiles1;
+		Profiles profiles = getProfiles1();
 		assertThat(profiles.isAccepted("x")).isFalse();
 	}
 
 	@Test
 	void isActiveWhenNoActiveAndDefaultContainsProfileReturnsTrue() {
+		Profiles profiles = getProfiles2() ;
+		assertThat(profiles.isAccepted("d")).isTrue();
+	}
+
+	@NotNull
+	private static Profiles getProfiles2() {
 		MockEnvironment environment = new MockEnvironment();
 		environment.setDefaultProfiles("d", "e", "f");
 		Binder binder = Binder.get(environment);
 		Profiles profiles1 = new Profiles(environment, binder, null);
 		Profiles profiles = profiles1;
-		assertThat(profiles.isAccepted("d")).isTrue();
+		return profiles;
 	}
 
 	@Test
 	void isActiveWhenNoActiveAndDefaultDoesNotContainProfileReturnsFalse() {
-		MockEnvironment environment = new MockEnvironment();
-		environment.setDefaultProfiles("d", "e", "f");
-		Binder binder = Binder.get(environment);
-		Profiles profiles1 = new Profiles(environment, binder, null);
-		Profiles profiles = profiles1;
+		Profiles profiles = getProfiles2() ;
 		assertThat(profiles.isAccepted("x")).isFalse();
 	}
 
