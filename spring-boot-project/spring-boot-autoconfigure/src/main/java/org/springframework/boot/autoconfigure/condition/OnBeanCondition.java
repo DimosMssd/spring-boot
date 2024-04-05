@@ -237,26 +237,43 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 
 	private Set<String> getBeanNamesForType(ListableBeanFactory beanFactory, boolean considerHierarchy, Class<?> type,
 			Set<Class<?>> parameterizedContainers) {
-		Set<String> result = collectBeanNamesForType(beanFactory, considerHierarchy, type, parameterizedContainers,
-				null);
-		return (result != null) ? result : Collections.emptySet();
+		Set<String> result = new HashSet<>();
+		BeanActionVisitor visitor = new CollectBeanNamesByTypeVisitor(); // Utilisation du visiteur
+		return visitor.visit(new BeanStructure(), beanFactory, considerHierarchy, type, parameterizedContainers, result);
 	}
 
-	private Set<String> collectBeanNamesForType(ListableBeanFactory beanFactory, boolean considerHierarchy,
-			Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result) {
-		result = addAll(result, beanFactory.getBeanNamesForType(type, true, false));
-		for (Class<?> container : parameterizedContainers) {
-			ResolvableType generic = ResolvableType.forClassWithGenerics(container, type);
-			result = addAll(result, beanFactory.getBeanNamesForType(generic, true, false));
+
+	public class BeanStructure {
+
+		public Set<String> accept(BeanActionVisitor visitor, ListableBeanFactory beanFactory, boolean considerHierarchy,
+				Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result) {
+			return visitor.visit(this, beanFactory, considerHierarchy, type, parameterizedContainers, result);
 		}
-		if (considerHierarchy && beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
-			BeanFactory parent = hierarchicalBeanFactory.getParentBeanFactory();
-			if (parent instanceof ListableBeanFactory listableBeanFactory) {
-				result = collectBeanNamesForType(listableBeanFactory, considerHierarchy, type, parameterizedContainers,
-						result);
+	}
+
+	public interface BeanActionVisitor {
+		Set<String> visit(BeanStructure structure, ListableBeanFactory beanFactory, boolean considerHierarchy,
+				Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result);
+	}
+
+	public class CollectBeanNamesByTypeVisitor implements BeanActionVisitor {
+		@Override
+		public Set<String> visit(BeanStructure structure, ListableBeanFactory beanFactory, boolean considerHierarchy,
+				Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result) {
+			result = addAll(result, beanFactory.getBeanNamesForType(type, true, false));
+			for (Class<?> container : parameterizedContainers) {
+				ResolvableType generic = ResolvableType.forClassWithGenerics(container, type);
+				result = addAll(result, beanFactory.getBeanNamesForType(generic, true, false));
 			}
+			if (considerHierarchy && beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
+				BeanFactory parent = hierarchicalBeanFactory.getParentBeanFactory();
+				if (parent instanceof ListableBeanFactory listableBeanFactory) {
+					BeanActionVisitor visitor = new CollectBeanNamesByTypeVisitor();
+					result = structure.accept(visitor, listableBeanFactory, considerHierarchy, type, parameterizedContainers, result);
+				}
+			}
+			return result;
 		}
-		return result;
 	}
 
 	private Set<String> getBeanNamesForAnnotation(ClassLoader classLoader, ConfigurableListableBeanFactory beanFactory,
