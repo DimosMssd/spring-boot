@@ -259,7 +259,7 @@ public class WebMvcProperties {
 		}
 
 		public String getServletMapping() {
-			if (this.path.equals("") || this.path.equals("/")) {
+			if (this.path.isEmpty() || this.path.equals("/")) {
 				return "/";
 			}
 			if (this.path.endsWith("/")) {
