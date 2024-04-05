@@ -365,6 +365,12 @@ public class ServerProperties {
 	 * Tomcat properties.
 	 */
 	public static class Tomcat {
+		/**
+		 * Constants definitions
+		 */
+		private static final int DEFAULT_MAX_CONNECTIONS = 8192;
+
+		private static final int DEFAULT_ACCEPT_COUNT = 100;
 
 		/**
 		 * Access log configuration.
@@ -421,13 +427,13 @@ public class ServerProperties {
 		 * given time. Once the limit has been reached, the operating system may still
 		 * accept connections based on the "acceptCount" property.
 		 */
-		private int maxConnections = 8192;
+		private int maxConnections = DEFAULT_MAX_CONNECTIONS;
 
 		/**
 		 * Maximum queue length for incoming connection requests when all possible request
 		 * processing threads are in use.
 		 */
-		private int acceptCount = 100;
+		private int acceptCount = DEFAULT_ACCEPT_COUNT;
 
 		/**
 		 * Maximum number of idle processors that will be retained in the cache and reused
