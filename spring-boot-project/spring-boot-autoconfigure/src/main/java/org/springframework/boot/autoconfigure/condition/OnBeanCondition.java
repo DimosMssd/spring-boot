@@ -114,6 +114,26 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 		ConditionMessage matchMessage = ConditionMessage.empty();
+
+		ConditionOutcome beanOutcome = checkConditionalOnBean(context, metadata, matchMessage);
+		if (beanOutcome != null) {
+			return beanOutcome;
+		}
+
+		ConditionOutcome singleCandidateOutcome = checkConditionalOnSingleCandidate(context, metadata, matchMessage);
+		if (singleCandidateOutcome != null) {
+			return singleCandidateOutcome;
+		}
+
+		ConditionOutcome missingBeanOutcome = checkConditionalOnMissingBean(context, metadata, matchMessage);
+		if (missingBeanOutcome != null) {
+			return missingBeanOutcome;
+		}
+
+		return ConditionOutcome.match(matchMessage);
+	}
+
+	private ConditionOutcome checkConditionalOnBean(ConditionContext context, AnnotatedTypeMetadata metadata, ConditionMessage matchMessage) {
 		MergedAnnotations annotations = metadata.getAnnotations();
 		if (annotations.isPresent(ConditionalOnBean.class)) {
 			Spec<ConditionalOnBean> spec = new Spec<>(context, metadata, annotations, ConditionalOnBean.class);
@@ -123,10 +143,16 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 				return ConditionOutcome.noMatch(spec.message().because(reason));
 			}
 			matchMessage = spec.message(matchMessage)
-				.found("bean", "beans")
-				.items(Style.QUOTE, matchResult.getNamesOfAllMatches());
+					.found("bean", "beans")
+					.items(Style.QUOTE, matchResult.getNamesOfAllMatches());
+			return ConditionOutcome.match(matchMessage);
 		}
+		return null;
+	}
+
+	private ConditionOutcome checkConditionalOnSingleCandidate(ConditionContext context, AnnotatedTypeMetadata metadata, ConditionMessage matchMessage) {
 		if (metadata.isAnnotated(ConditionalOnSingleCandidate.class.getName())) {
+			MergedAnnotations annotations = metadata.getAnnotations();
 			Spec<ConditionalOnSingleCandidate> spec = new SingleCandidateSpec(context, metadata, annotations);
 			MatchResult matchResult = getMatchingBeans(context, spec);
 			if (!matchResult.isAllMatched()) {
@@ -135,35 +161,39 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 			Set<String> allBeans = matchResult.getNamesOfAllMatches();
 			if (allBeans.size() == 1) {
 				matchMessage = spec.message(matchMessage).found("a single bean").items(Style.QUOTE, allBeans);
-			}
-			else {
+			} else {
 				List<String> primaryBeans = getPrimaryBeans(context.getBeanFactory(), allBeans,
 						spec.getStrategy() == SearchStrategy.ALL);
 				if (primaryBeans.isEmpty()) {
-					return ConditionOutcome
-						.noMatch(spec.message().didNotFind("a primary bean from beans").items(Style.QUOTE, allBeans));
+					return ConditionOutcome.noMatch(spec.message().didNotFind("a primary bean from beans").items(Style.QUOTE, allBeans));
 				}
 				if (primaryBeans.size() > 1) {
-					return ConditionOutcome
-						.noMatch(spec.message().found("multiple primary beans").items(Style.QUOTE, primaryBeans));
+					return ConditionOutcome.noMatch(spec.message().found("multiple primary beans").items(Style.QUOTE, primaryBeans));
 				}
 				matchMessage = spec.message(matchMessage)
-					.found("a single primary bean '" + primaryBeans.get(0) + "' from beans")
-					.items(Style.QUOTE, allBeans);
+						.found("a single primary bean '" + primaryBeans.get(0) + "' from beans")
+						.items(Style.QUOTE, allBeans);
 			}
+			return ConditionOutcome.match(matchMessage);
 		}
+		return null;
+	}
+
+	private ConditionOutcome checkConditionalOnMissingBean(ConditionContext context, AnnotatedTypeMetadata metadata, ConditionMessage matchMessage) {
 		if (metadata.isAnnotated(ConditionalOnMissingBean.class.getName())) {
-			Spec<ConditionalOnMissingBean> spec = new Spec<>(context, metadata, annotations,
-					ConditionalOnMissingBean.class);
+			MergedAnnotations annotations = metadata.getAnnotations();
+			Spec<ConditionalOnMissingBean> spec = new Spec<>(context, metadata, annotations, ConditionalOnMissingBean.class);
 			MatchResult matchResult = getMatchingBeans(context, spec);
 			if (matchResult.isAnyMatched()) {
 				String reason = createOnMissingBeanNoMatchReason(matchResult);
 				return ConditionOutcome.noMatch(spec.message().because(reason));
 			}
 			matchMessage = spec.message(matchMessage).didNotFind("any beans").atAll();
+			return ConditionOutcome.match(matchMessage);
 		}
-		return ConditionOutcome.match(matchMessage);
+		return null;
 	}
+
 
 	protected final MatchResult getMatchingBeans(ConditionContext context, Spec<?> spec) {
 		ClassLoader classLoader = context.getClassLoader();
@@ -237,43 +267,26 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 
 	private Set<String> getBeanNamesForType(ListableBeanFactory beanFactory, boolean considerHierarchy, Class<?> type,
 			Set<Class<?>> parameterizedContainers) {
-		Set<String> result = new HashSet<>();
-		BeanActionVisitor visitor = new CollectBeanNamesByTypeVisitor(); // Utilisation du visiteur
-		return visitor.visit(new BeanStructure(), beanFactory, considerHierarchy, type, parameterizedContainers, result);
+		Set<String> result = collectBeanNamesForType(beanFactory, considerHierarchy, type, parameterizedContainers,
+				null);
+		return (result != null) ? result : Collections.emptySet();
 	}
 
-
-	public class BeanStructure {
-
-		public Set<String> accept(BeanActionVisitor visitor, ListableBeanFactory beanFactory, boolean considerHierarchy,
-				Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result) {
-			return visitor.visit(this, beanFactory, considerHierarchy, type, parameterizedContainers, result);
+	private Set<String> collectBeanNamesForType(ListableBeanFactory beanFactory, boolean considerHierarchy,
+			Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result) {
+		result = addAll(result, beanFactory.getBeanNamesForType(type, true, false));
+		for (Class<?> container : parameterizedContainers) {
+			ResolvableType generic = ResolvableType.forClassWithGenerics(container, type);
+			result = addAll(result, beanFactory.getBeanNamesForType(generic, true, false));
 		}
-	}
-
-	public interface BeanActionVisitor {
-		Set<String> visit(BeanStructure structure, ListableBeanFactory beanFactory, boolean considerHierarchy,
-				Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result);
-	}
-
-	public class CollectBeanNamesByTypeVisitor implements BeanActionVisitor {
-		@Override
-		public Set<String> visit(BeanStructure structure, ListableBeanFactory beanFactory, boolean considerHierarchy,
-				Class<?> type, Set<Class<?>> parameterizedContainers, Set<String> result) {
-			result = addAll(result, beanFactory.getBeanNamesForType(type, true, false));
-			for (Class<?> container : parameterizedContainers) {
-				ResolvableType generic = ResolvableType.forClassWithGenerics(container, type);
-				result = addAll(result, beanFactory.getBeanNamesForType(generic, true, false));
+		if (considerHierarchy && beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
+			BeanFactory parent = hierarchicalBeanFactory.getParentBeanFactory();
+			if (parent instanceof ListableBeanFactory listableBeanFactory) {
+				result = collectBeanNamesForType(listableBeanFactory, considerHierarchy, type, parameterizedContainers,
+						result);
 			}
-			if (considerHierarchy && beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
-				BeanFactory parent = hierarchicalBeanFactory.getParentBeanFactory();
-				if (parent instanceof ListableBeanFactory listableBeanFactory) {
-					BeanActionVisitor visitor = new CollectBeanNamesByTypeVisitor();
-					result = structure.accept(visitor, listableBeanFactory, considerHierarchy, type, parameterizedContainers, result);
-				}
-			}
-			return result;
 		}
+		return result;
 	}
 
 	private Set<String> getBeanNamesForAnnotation(ClassLoader classLoader, ConfigurableListableBeanFactory beanFactory,
